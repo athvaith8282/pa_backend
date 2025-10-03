@@ -1,6 +1,7 @@
 
 from fastapi import FastAPI
 from schemas import InferIn, InferOut, HistoryIn, HistoryOut
+from fastapi.responses import StreamingResponse
 
 from contextlib import asynccontextmanager
 
@@ -43,4 +44,9 @@ async def invoke(infer: InferIn):
     return InferOut(
         thread_id=infer.thread_id,
         text=response["messages"][-1].content
+    )
+@app.post('/stream')
+async def stream(infer: InferIn):
+    return(
+        StreamingResponse(pa_agent.stream_output(infer),media_type="text/event-stream")
     )
