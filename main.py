@@ -1,14 +1,16 @@
 
-from fastapi import FastAPI, UploadFile, Form, File
+from fastapi import FastAPI, UploadFile, Form, File, Body
 from schemas import InferIn, InferOut, HistoryIn, HistoryOut
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from datetime import datetime
 from contextlib import asynccontextmanager
 
 from agent import MyGraph
-from config import RETRIEVER_DATA_DIR, RETRIEVER_STATUS_FILE
+import config as cfg 
 from retriever.main import update_retriever
 from logger_config import get_logger
+
+import json
 
 logger = get_logger()
 pa_agent: MyGraph | None  = None
@@ -62,7 +64,7 @@ async def upload_file(
     ):
     try:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{RETRIEVER_DATA_DIR}/file_{timestamp}.pdf"
+        filename = f"{cfg.RETRIEVER_DATA_DIR}/file_{timestamp}.pdf"
         with open(filename, 'wb') as f:
             f.write(await file.read())
         update_retriever(filename, description=description)
@@ -72,7 +74,43 @@ async def upload_file(
         }
     except Exception as e:
         logger.exception(e)
+        return JSONResponse(
+            status_code=500,  # HTTP error code
+            content={
+                "filename": filename,
+                "status": "Failed",
+                "error": str(e)
+            }
+        )
+
+@app.post('/store-json')
+def store_token(token: dict = Body(...)):
+    try:
+        with open(cfg.GOOGLE_TOKEN_PATH, 'w') as f:
+            json.dump(token, f)
         return {
-            "filename" : filename,
-            "status" : "Failed"
+            "status" : "Updated"
         }
+    except Exception as e:
+        logger.exception(e)
+        return JSONResponse(
+            status_code=500,
+            content= {
+                "status" : "Failed"
+            }
+        )
+
+@app.get('/get-token')
+def get_token():
+    try:
+        with open(cfg.GOOGLE_TOKEN_PATH, 'r') as f:
+            response = json.load(f)
+        return response
+    except Exception as e:
+        logger.exception(e)
+        return JSONResponse(
+            status_code=500,
+            content= {
+                "status" : "Failed"
+            }
+        )

@@ -8,6 +8,16 @@ from langchain_core.tools import tool, InjectedToolCallId
 from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
 from prompts import WRITE_TODOS_SYSTEM_PROMPT
+from langchain_google_community import GmailToolkit
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+import config as cfg
+import json
+import os
+from langchain.tools.retriever import create_retriever_tool
+from langchain_chroma import Chroma
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
 
 from my_state import MyState
 
@@ -64,7 +74,36 @@ async def read_todos(state: Annotated[MyState, InjectedState]):
     return result.strip()
 
 def get_tools():
-
+    with open(cfg.GOOGLE_TOKEN_PATH, 'r') as f:
+        gmail_token = json.load(f)
+    with open(cfg.RETRIEVER_STATUS_FILE, 'r') as f:
+        retriever_status = json.load(f)
+    description = ""
+    for pdf, info in retriever_status.items():
+        if info["status"] == "Done":
+            description += f'{info["description"]}' + "\n"
+    creds = Credentials(    
+                token=gmail_token["access_token"],
+                refresh_token=gmail_token["refresh_token"],
+                client_id=os.getenv("CLIENT_ID"),
+                client_secret=os.getenv("CLIENT_SECRET"),
+            )
+    api_resource = build('gmail', 'v1', credentials=creds)
+    toolkit = GmailToolkit(api_resource=api_resource)
+    gmail_tools = toolkit.get_tools()
+    chromadb = Chroma( 
+            collection_name="banner_health_blogs",
+            embedding_function=GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001"),
+            persist_directory=cfg.VEC_DB_PATH
+        )
+    retriever = chromadb.as_retriever(
+                search_kwargs = {"k": 5}
+            )
+    retriever_tool = create_retriever_tool( 
+                retriever= retriever,
+                name='retriever_health_blog_post',
+                description=description
+            )
     return [
-        tavily_search, read_todos, write_todos
-    ]
+        tavily_search, read_todos, write_todos, retriever_tool
+    ] + gmail_tools

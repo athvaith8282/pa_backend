@@ -11,3 +11,6 @@ RETRIEVER_DATA_DIR = os.path.join(PARNET_DIR, 'retriever/data')
 RETRIEVER_STATUS_FILE = os.path.join(RETRIEVER_DATA_DIR, "status_retriever.json")
 VEC_DB_DIR = os.path.join(DATA_DIR, 'vectordb')
 VEC_DB_PATH = os.path.join(VEC_DB_DIR, 'blogs_chroma_db')
+
+GOOGLE_TOKEN_DIR = os.path.join(DATA_DIR, 'google_token')
+GOOGLE_TOKEN_PATH = os.path.join(GOOGLE_TOKEN_DIR, 'google_token.json')
