@@ -5,6 +5,7 @@ from langchain_core.messages import HumanMessage, messages_to_dict
 from langgraph.prebuilt import tools_condition, ToolNode
 
 from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.load import dumps
 
 from my_state import MyState
@@ -18,7 +19,7 @@ class MyGraph():
         self.sqlite_conn = None
         self.memory =None
         self.tools = get_tools()
-        self.llm = ChatOllama(model="llama3.2")
+        self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
         self.llm_with_tools = self.llm.bind_tools(self.tools)
     
     async def initiate(self):

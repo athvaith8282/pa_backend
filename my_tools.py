@@ -11,6 +11,8 @@ from prompts import WRITE_TODOS_SYSTEM_PROMPT
 
 from my_state import MyState
 
+from langchain_core.callbacks import adispatch_custom_event
+
 tavily_search = TavilySearch(
     max_results = 5
 )
@@ -19,6 +21,12 @@ tavily_search = TavilySearch(
 async def write_todos(
     todos: list[Todo], tool_call_id: Annotated[str, InjectedToolCallId]
 ) -> Command:
+    await adispatch_custom_event( 
+        name="on_todo_update",
+        data={
+            "todo": todos
+        }
+    )
     return Command(
         update={
             "todos": todos,
