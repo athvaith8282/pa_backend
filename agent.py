@@ -4,7 +4,6 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langchain_core.messages import HumanMessage, messages_to_dict
 from langgraph.prebuilt import tools_condition, ToolNode
 
-from langchain_ollama import ChatOllama
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.load import dumps
 
@@ -18,9 +17,6 @@ class MyGraph():
         self.graph = None 
         self.sqlite_conn = None
         self.memory =None
-        self.tools = get_tools()
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
-        self.llm_with_tools = self.llm.bind_tools(self.tools)
     
     async def initiate(self):
         await self.compile_graph()
@@ -31,6 +27,10 @@ class MyGraph():
         }
     
     async def compile_graph(self):
+
+        self.tools = await get_tools()
+        self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        self.llm_with_tools = self.llm.bind_tools(self.tools)
         graph_builder = StateGraph(MyState)
         graph_builder.add_node("chatbot", self.chatbot)
 

@@ -14,3 +14,10 @@ VEC_DB_PATH = os.path.join(VEC_DB_DIR, 'blogs_chroma_db')
 
 GOOGLE_TOKEN_DIR = os.path.join(DATA_DIR, 'google_token')
 GOOGLE_TOKEN_PATH = os.path.join(GOOGLE_TOKEN_DIR, 'google_token.json')
+
+MCP_CONFIG = {
+                "F1_MCP": {
+                    "url": "http://localhost:8000/mcp",
+                    "transport": "streamable_http",
+                    }
+            }

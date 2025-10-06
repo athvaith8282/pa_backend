@@ -5,6 +5,9 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from datetime import datetime
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from agent import MyGraph
 import config as cfg 
 from retriever.main import update_retriever

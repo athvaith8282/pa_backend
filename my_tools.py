@@ -23,6 +23,9 @@ from my_state import MyState
 
 from langchain_core.callbacks import adispatch_custom_event
 
+from langchain_mcp_adapters.client import MultiServerMCPClient 
+
+
 tavily_search = TavilySearch(
     max_results = 5
 )
@@ -73,7 +76,7 @@ async def read_todos(state: Annotated[MyState, InjectedState]):
 
     return result.strip()
 
-def get_tools():
+async def get_tools():
     with open(cfg.GOOGLE_TOKEN_PATH, 'r') as f:
         gmail_token = json.load(f)
     with open(cfg.RETRIEVER_STATUS_FILE, 'r') as f:
@@ -91,6 +94,10 @@ def get_tools():
     api_resource = build('gmail', 'v1', credentials=creds)
     toolkit = GmailToolkit(api_resource=api_resource)
     gmail_tools = toolkit.get_tools()
+    mcp_client = MultiServerMCPClient(
+        cfg.MCP_CONFIG
+    )
+    f1_tools = await mcp_client.get_tools()
     chromadb = Chroma( 
             collection_name="banner_health_blogs",
             embedding_function=GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001"),
@@ -106,4 +113,4 @@ def get_tools():
             )
     return [
         tavily_search, read_todos, write_todos, retriever_tool
-    ] + gmail_tools
+    ] + gmail_tools + f1_tools
