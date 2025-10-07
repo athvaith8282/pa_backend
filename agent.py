@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, START, END
 from sqlite_db import get_sqlite_conn
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from langchain_core.messages import HumanMessage, messages_to_dict
+from langchain_core.messages import HumanMessage, SystemMessage,  messages_to_dict
 from langgraph.prebuilt import tools_condition, ToolNode
 
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -10,6 +10,7 @@ from langchain.load import dumps
 from my_state import MyState
 from my_tools import get_tools
 from schemas import InferIn
+import prompts as prm
 
 class MyGraph():
 
@@ -55,13 +56,29 @@ class MyGraph():
             return messages_to_dict(history)
         else:    
             return []
+    
+    async def is_new_thread(self, thread_id):
+        conf = {"configurable": {"thread_id": thread_id}}
+        block = await self.memory.aget(conf)
+        if block:
+            return False
+        else:
+            return True
 
     async def invoke(self, infer: InferIn):
         if self.graph:
-            response = await self.graph.ainvoke({
-                "messages": [
+            messages = []
+            if self.is_new_thread(thread_id=infer.thread_id):
+                messages = [
+                    SystemMessage(content=prm.SYSTEM_PROMPT),
                     HumanMessage(content=infer.input)
                 ]
+            else:
+                messages = [
+                    HumanMessage(content=infer.input)
+                ]
+            response = await self.graph.ainvoke({
+                "messages": messages
             }, config={
                 "configurable": {
                     "thread_id": str(infer.thread_id)
@@ -73,9 +90,19 @@ class MyGraph():
     
     async def stream_output(self, infer: InferIn):
         if self.graph:
+            messages = []
+            if self.is_new_thread(thread_id=infer.thread_id):
+                messages = [
+                    SystemMessage(content=prm.SYSTEM_PROMPT),
+                    HumanMessage(content=infer.input)
+                ]
+            else:
+                messages = [
+                    HumanMessage(content=infer.input)
+                ]
             async for event in self.graph.astream_events(
                 {
-                    "messages": [HumanMessage(content=infer.input)]
+                    "messages": messages
                 },
                 config={
                 "configurable": {
